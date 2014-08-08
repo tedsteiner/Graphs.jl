@@ -190,6 +190,7 @@ function process_neighbors!{V,D,Heap,H}(
     heap::Heap = state.heap
     hmap::Vector{H} = state.hmap
     dv::D = zero(D)
+    dv2::D = zero(D)
 
     for e in out_edges(u, graph)
         v::V = target(e, graph)
@@ -198,7 +199,7 @@ function process_neighbors!{V,D,Heap,H}(
 
         if v_color == 0
             dists[iv] = dv = du + edge_property(edge_dists, e, graph)
-            dists2[iv] = dv2 = du2 + edge_property(edge_dists2, e, graph) # TODO: Update function
+            dists2[iv] = dv2 = du2 + edge_property(edge_dists2, e, graph)
             parents[iv] = u
             colormap[iv] = 1
             discover_vertex!(visitor, u, v, dv)
@@ -208,8 +209,8 @@ function process_neighbors!{V,D,Heap,H}(
 
         elseif v_color == 1
             dv = du + edge_property(edge_dists, e, graph)
-            dv2 = du2 + edge_property(edge_dists, e, graph)
             if dv < dists[iv]
+                dv2 = du2 + edge_property(edge_dists2, e, graph)
                 dists[iv] = dv
                 dists2[iv] = dv2
                 parents[iv] = u
