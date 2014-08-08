@@ -312,7 +312,7 @@ function dijkstra_shortest_paths!{V, D, Heap, H}(
 
     for s in sources
         set_source2!(state, graph, s)
-        if !include_vertex!(visitor, s, s, d02)
+        if !include_vertex!(visitor, s, s, d0)
             return state
         end
     end
@@ -336,7 +336,7 @@ function dijkstra_shortest_paths!{V, D, Heap, H}(
 
         ui = vertex_index(u, graph)
         colormap[ui] = 2
-        if !include_vertex!(visitor, parents[ui], u, du2)
+        if !include_vertex!(visitor, parents[ui], u, du)
             return state
         end
 
