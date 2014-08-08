@@ -181,7 +181,8 @@ function process_neighbors!{V,D,Heap,H}(
     graph::AbstractGraph{V},
     edge_dists::AbstractEdgePropertyInspector{D},
     edge_dists2::AbstractEdgePropertyInspector{D},
-    u::V, du::D, du2::D, visitor::AbstractDijkstraVisitor)
+    u::V, du::D, du2::D, visitor::AbstractDijkstraVisitor,
+    max_dist2::Real=Inf)
 
     dists::Vector{D} = state.dists
     dists2::Vector{D} = state.dists2
@@ -209,8 +210,11 @@ function process_neighbors!{V,D,Heap,H}(
 
         elseif v_color == 1
             dv = du + edge_property(edge_dists, e, graph)
-            if dv < dists[iv]
-                dv2 = du2 + edge_property(edge_dists2, e, graph)
+            dv2 = du2 + edge_property(edge_dists2, e, graph)
+            if dv < dists[iv] && dv2 <= max_dist2
+                # Added inequality limits maximum auxiliary distance allowed. 
+                # This causes the algorithm to continue searching for a path 
+                # that meets the maximum distance requirement most optimally.
                 dists[iv] = dv
                 dists2[iv] = dv2
                 parents[iv] = u
@@ -291,7 +295,8 @@ function dijkstra_shortest_paths!{V, D, Heap, H}(
     edge_dists2::AbstractEdgePropertyInspector{D}, # secondary distances associated with edges (for cutting off routes)
     sources::AbstractVector{V},             # the sources
     visitor::AbstractDijkstraVisitor,       # visitor object
-    state::DijkstraStates2{V,D,Heap,H})      # the states
+    state::DijkstraStates2{V,D,Heap,H},     # the states
+    max_dist2::Real=Inf )                   # Maximum auxiliary (physical) distance allowed
 
     @graph_requires graph incidence_list vertex_map vertex_list
     edge_property_requirement(edge_dists, graph)
@@ -342,7 +347,7 @@ function dijkstra_shortest_paths!{V, D, Heap, H}(
 
         # process u's neighbors
 
-        process_neighbors!(state, graph, edge_dists, edge_dists2, u, du, du2, visitor)
+        process_neighbors!(state, graph, edge_dists, edge_dists2, u, du, du2, visitor, max_dist2)
         close_vertex!(visitor, u)
     end
 
@@ -371,14 +376,18 @@ function dijkstra_shortest_paths{V,D}(
     dijkstra_shortest_paths!(graph, edge_len, [s], visitor, state)
 end
 
-function dijkstra_shortest_paths{V,D}(
-    graph::AbstractGraph{V}, edge_dists::Vector{D}, edge_dists2::Vector{D}, s::V;
-    visitor::AbstractDijkstraVisitor=TrivialDijkstraVisitor())
+function dijkstra_shortest_paths{V,D}( graph::AbstractGraph{V}, 
+                                       edge_dists::Vector{D},
+                                       edge_dists2::Vector{D},
+                                       s::V, 
+                                       max_dist2::Real=Inf;
+                                       visitor::AbstractDijkstraVisitor=TrivialDijkstraVisitor() )
 
     edge_len::AbstractEdgePropertyInspector{D} = VectorEdgePropertyInspector(edge_dists)
     edge_len2::AbstractEdgePropertyInspector{D} = VectorEdgePropertyInspector(edge_dists2)
     state = create_dijkstra_states2(graph, D)
-    dijkstra_shortest_paths!(graph, edge_len, edge_len2, [s], visitor, state)
+
+    dijkstra_shortest_paths!(graph, edge_len, edge_len2, [s], visitor, state, max_dist2)
 end
 
 function dijkstra_shortest_paths{V,D}(
